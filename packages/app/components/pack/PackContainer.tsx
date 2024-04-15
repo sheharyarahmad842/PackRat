@@ -1,41 +1,36 @@
 import { useEffect, useState } from 'react';
 import DropdownComponent from '../Dropdown';
-// import useGetPacks from '../../hooks/useGetPacks';
 import { AddItem } from '../item/AddItem';
 import { TableContainer } from '../pack_table/Table';
-// import { useAuth } from "../../auth/provider";
 import { useUserPacks } from '../../hooks/packs/useUserPacks';
-import {
-  fetchUserPacks,
-  selectPackById,
-  selectAllPacks,
-} from '../../store/packsStore';
-import { updateNewTripPack } from '../../store/tripsStore';
 import { View } from 'react-native';
 import { AddItemModal } from './AddItemModal';
 import useCustomStyles from 'app/hooks/useCustomStyles';
-import { useSearchParams } from 'app/hooks/common';
 import { useAuthUser } from 'app/auth/hooks';
+import { usePackId } from 'app/hooks/packs';
+import { createParam } from '@packrat/crosspath';
 
 export default function PackContainer({ isCreatingTrip = false }) {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-
-  const searchParams = useSearchParams();
-  const [currentPackId, setCurrentPackId] = useState(
-    searchParams.get('packId'),
-  );
+  const [packIdParam] = usePackId();
+  const [currentPackId, setCurrentPackId] = useState(packIdParam);
   const user = useAuthUser();
+  console.log({ currentPackId });
 
   const [refetch, setRefetch] = useState(false);
   const styles = useCustomStyles(loadStyles);
+  const { useParams } = createParam<{ id: number }>();
+  const { params, setParams } = useParams('id');
 
   // TODO - improve refetch logic. Should be handled entirely by the hook
+
+  let ownerId;
   const {
     data: packs,
     error,
     isLoading,
     refetch: refetchQuery,
-  } = useUserPacks((ownerId = user?._id));
+  } = useUserPacks(user?.id);
 
   useEffect(() => {
     refetchQuery();
@@ -49,16 +44,18 @@ export default function PackContainer({ isCreatingTrip = false }) {
    */
   const handlePack = (val) => {
     // const selectedPack = packs.find((pack) => pack.name == val);
-    const selectedPack = packs.find((pack) => pack._id == val);
+    const selectedPack = packs.find((pack) => pack.id == val);
 
-    setCurrentPackId(selectedPack?._id);
+    setCurrentPackId(selectedPack?.id);
 
-    if (isCreatingTrip && selectedPack?._id) {
-      searchParams.set('packId', selectedPack?._id);
+    if (isCreatingTrip && selectedPack?.id) {
+      setParams({
+        id: selectedPack?.id,
+      });
     }
   };
 
-  const currentPack = packs?.find((pack) => pack._id === currentPackId);
+  const currentPack = packs?.find((pack) => pack.id === currentPackId);
 
   const dataValues = packs?.map((item) => item?.name) ?? [];
 
@@ -67,7 +64,7 @@ export default function PackContainer({ isCreatingTrip = false }) {
       <DropdownComponent
         data={packs ?? []}
         textKey={'name'}
-        valueKey={'_id'}
+        valueKey={'id'}
         value={currentPackId}
         onValueChange={handlePack}
         placeholder={'Select a Pack'}

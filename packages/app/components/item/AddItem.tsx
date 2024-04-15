@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { ItemForm } from './ItemForm'; // assuming you moved the form related code to a separate component
 import { useAddPackItem } from 'app/hooks/packs/useAddPackItem';
 import { useEditPackItem } from 'app/hooks/packs/useEditPackItem';
+import { usePackId } from 'app/hooks/packs/usePackId';
+import {
+  addItem as addItemSchema,
+  editItem as editItemSchema,
+  type Item,
+} from '@packrat/validations';
+import { useMemo } from 'react';
+import { useAuthUser } from 'app/auth/hooks';
 
 interface AddItemProps {
-  _id: string;
   isEdit: boolean;
   initialData: {
     global: string;
-    _id: string;
+    id: string;
     name?: string;
     weight?: number;
     quantity?: number;
@@ -29,7 +35,6 @@ interface AddItemProps {
 }
 
 export const AddItem = ({
-  _id,
   isEdit,
   initialData,
   packId,
@@ -41,17 +46,11 @@ export const AddItem = ({
   isItemPage,
   setIsAddItemModalOpen = () => {},
 }: AddItemProps) => {
-  // Moved the state up to the parent component
-  const [name, setName] = useState(initialData?.name || '');
-  const [weight, setWeight] = useState(initialData?.weight?.toString() || '');
-  const [quantity, setQuantity] = useState(
-    initialData?.quantity?.toString() || '',
-  );
-  const [categoryType, setCategoryType] = useState(
-    initialData?.category?.name || '',
-  );
+  const [currPackId] = usePackId();
 
-  const [unit, setUnit] = useState(initialData?.unit || '');
+  const user = useAuthUser();
+
+  const ownerId = user?.id;
 
   const {
     // mutation: addPackItemMutation
@@ -59,77 +58,59 @@ export const AddItem = ({
     isError,
     addPackItem,
   } = useAddPackItem();
-
   const {
     // mutation: addPackItemMutation
 
     editPackItem,
   } = useEditPackItem(isItemPage);
 
-  // handle updates to initialData
-  useEffect(() => {
-    setName(initialData?.name || '');
-    setWeight(initialData?.weight?.toString() || '');
-    setQuantity(initialData?.quantity?.toString() || '');
-    setUnit(initialData?.unit || '');
-  }, [initialData]);
+  const handleSubmit = (data: Item) => {
+    if (isEdit) {
+      editPackItem({
+        ...data,
+        packId: currPackId,
+      });
+    } else {
+      addPackItem(data);
+    }
+    if (closeModalHandler) closeModalHandler();
+  };
 
-  const handleSubmit = () => {
-    const PackId = packId || initialData._id;
+  const defaultValues = useMemo(() => {
+    if (!initialData) {
+      return { unit: 'lb', ownerId };
+    }
+    const result = {
+      name: initialData.name || '',
+      weight: initialData.weight,
+      quantity: initialData.quantity,
+      type: initialData.category?.name,
+      unit: initialData.unit,
+      id: packId,
+    };
 
     if (isEdit) {
-      if (PackId && initialData.global) {
-        editPackItem({
-          name,
-          weight,
-          quantity,
-          unit,
-          type: categoryType,
-          _id: initialData._id,
-        });
-        closeModalHandler();
-      } else {
-        editPackItem({
-          name,
-          weight,
-          quantity,
-          unit,
-          type: categoryType,
-          _id,
-          // packId,
-        });
-        setPage(1);
-        closeModalHandler();
-      }
-    } else {
-      addPackItem({
-        name,
-        weight,
-        quantity,
-        type: categoryType,
-        unit,
-        packId,
-      });
+      result.id = initialData.id;
+
+      return result;
     }
-  };
+
+    return { ...result, packId };
+  }, [initialData, isEdit, packId]);
+
+  console.log({ defaultValues });
 
   return (
     <View>
       <ItemForm
-        name={name}
-        setName={setName}
-        weight={weight}
-        setWeight={setWeight}
-        quantity={quantity}
-        setQuantity={setQuantity}
-        unit={unit}
-        setUnit={setUnit}
+        validationSchema={isEdit ? editItemSchema : addItemSchema}
         handleSubmit={handleSubmit}
+        defaultValues={defaultValues}
         isLoading={isLoading}
         isEdit={isEdit}
-        categoryType={categoryType}
-        setCategoryType={setCategoryType}
         currentPack={currentPack}
+        packId={packId}
+        ownerId={ownerId}
       />
     </View>
   );

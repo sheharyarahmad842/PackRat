@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { RText, RStack } from '@packrat/ui';
-import { Link } from 'solito/link';
+import { Link } from '@packrat/crosspath';
 import { Dimensions, View } from 'react-native';
-import { getPublicPacks, getPublicTrips } from '../../store/feedStore';
 import useTheme from '../../hooks/useTheme';
 import Carousel from '../carousel';
 import useCustomStyles from 'app/hooks/useCustomStyles';
@@ -11,7 +10,7 @@ import { useFeed } from 'app/hooks/feed';
 const { height, width } = Dimensions.get('window');
 
 interface FeedItem {
-  _id: string;
+  id: string;
   name: string;
   type: string;
   description: string;
@@ -28,7 +27,7 @@ const FeedPreviewScroll: React.FC<FeedPreviewScrollProps> = ({ itemWidth }) => {
   return (
     <Carousel itemWidth={itemWidth}>
       {feedData?.map((item: FeedItem, index: number) => {
-        const linkStr = `/${item.type}/${item._id}`;
+        const linkStr = `/${item.type}/${item.id}`;
         return linkStr ? (
           <Link href={linkStr} key={`${linkStr}`}>
             <View style={styles.cardStyles} key={index}>

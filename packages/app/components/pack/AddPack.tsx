@@ -1,13 +1,20 @@
+import React from 'react';
 import { Platform, View } from 'react-native';
-import DropdownComponent from '../Dropdown';
-import { RInput, RButton, RText, RLabel } from '@packrat/ui';
+import {
+  RButton,
+  RText,
+  RLabel,
+  Form,
+  FormSelect,
+  FormInput,
+  SubmitButton,
+} from '@packrat/ui';
 import { BaseModal } from '@packrat/ui';
-import { addPack } from '../../store/packsStore';
-import { useState } from 'react';
 import useTheme from '../../hooks/useTheme';
 import useCustomStyles from 'app/hooks/useCustomStyles';
 import { useAddNewPack } from 'app/hooks/packs';
 import { useRouter } from 'app/hooks/router';
+import { addPackSchema } from '@packrat/validations';
 
 export const AddPack = ({ isCreatingTrip = false }) => {
   // Hooks
@@ -32,14 +39,14 @@ export const AddPack = ({ isCreatingTrip = false }) => {
 
   // routing
   if (isSuccess && !isCreatingTrip && response) {
-    router.push(`/pack/${response.createdPack._id}`);
+    router.push(`/pack/${response.id}`);
   }
   /**
    * Handles the addition of a pack.
    * @return {void}
    */
-  const handleAddPack = () => {
-    addNewPack();
+  const handleAddPack = (data) => {
+    addNewPack(data);
   };
 
   const handleonValueChange = (itemValue) => {
@@ -49,33 +56,35 @@ export const AddPack = ({ isCreatingTrip = false }) => {
   return (
     <View style={styles.container}>
       <View style={styles.mobileStyle}>
-        <RInput
-          placeholder="Name"
-          value={name}
-          onChangeText={(text) => {
-            setName(text);
-          }}
-          width={Platform.OS === 'web' ? '25%' : '100%'}
-        />
-        <RLabel>Is Public:</RLabel>
-        <DropdownComponent
-          value={isPublic}
-          onValueChange={handleonValueChange}
-          data={packSelectOptions}
-          width="300px"
-          accessibilityLabel="Choose Service"
-          placeholder={'Is Public'}
-        />
-        <RButton
-          width={Platform.OS === 'web' ? null : '50%'}
-          onPress={() => {
-            handleAddPack();
-          }}
+        <Form
+          defaultValues={{ isPublic: '0', name: '' }}
+          validationSchema={addPackSchema}
         >
-          <RText style={{ color: currentTheme.colors.text }}>
-            {isLoading ? 'Loading...' : 'Add Pack'}
-          </RText>
-        </RButton>
+          <FormInput
+            placeholder="Name"
+            name="name"
+            label="Name"
+            style={{ width: '100%', textAlign: 'left' }}
+          />
+          <RLabel>Is Public:</RLabel>
+          <FormSelect
+            onValueChange={handleonValueChange}
+            options={packSelectOptions}
+            name="isPublic"
+            style={{ width: '300px' }}
+            width="300px"
+            accessibilityLabel="Choose Service"
+            placeholder={'Is Public'}
+          />
+          <SubmitButton
+            style={{ width: '100%', marginTop: 40 }}
+            onSubmit={handleAddPack}
+          >
+            <RText style={{ color: currentTheme.colors.text }}>
+              {isLoading ? 'Loading...' : 'Add Pack'}
+            </RText>
+          </SubmitButton>
+        </Form>
 
         {isError && <RText>Pack already exists</RText>}
       </View>
@@ -85,7 +94,7 @@ export const AddPack = ({ isCreatingTrip = false }) => {
 
 export const AddPackContainer = ({ isCreatingTrip }) => {
   return (
-    <BaseModal title="Add Pack" trigger="Add Pack">
+    <BaseModal title="Add Pack" trigger="Add Pack" footerComponent={undefined}>
       <AddPack isCreatingTrip={isCreatingTrip} />
     </BaseModal>
   );

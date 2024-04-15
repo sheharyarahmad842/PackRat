@@ -29,7 +29,7 @@
 //     let label = item;
 //     // Check if the item is an object
 //     if (typeof item === "object" && item !== null) {
-//       val = item.id || item._id || item.name;
+//       val = item.id || item.id || item.name;
 //       label = item.name;
 //     }
 //     return { label: String(label), value: val };
@@ -117,7 +117,7 @@
 // export default DropdownComponent;
 
 import React from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { RSelect } from '@packrat/ui';
 
 export const DropdownComponent = ({
@@ -126,8 +126,14 @@ export const DropdownComponent = ({
   placeholder,
   ...props
 }) => {
+  const isWeb = Platform.OS === 'web';
   return (
-    <View style={{ ...style, width: width || '100%' }}>
+    <View
+      style={[
+        { ...style, width: width || '100%' },
+        !isWeb && { flexDirection: 'row', justifyContent: 'center' },
+      ]}
+    >
       <RSelect placeholder={placeholder || 'Select'} {...props} />
     </View>
   );

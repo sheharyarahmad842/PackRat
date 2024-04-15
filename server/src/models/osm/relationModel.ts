@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import myDB from '../dbConnection';
-import { toGeoJSON } from '../../utils/osmFunctions/modelHandlers';
+// import { toGeoJSON } from '../../utils/osmFunctions/modelHandlers';
 
 const { Schema } = mongoose;
 
@@ -29,17 +29,22 @@ RelationSchema.pre('save', async function (next) {
   next();
 });
 
-RelationSchema.method('toGeoJSON', async function () {
-  console.log('toGeoJSON instance in mongo schema', this);
-  return await toGeoJSON(this.constructor, this);
-});
+// RelationSchema.method('toGeoJSON', async function () {
+//   console.log('toGeoJSON instance in mongo schema', this);
+//   return await toGeoJSON(this.constructor, this);
+// });
 
 RelationSchema.method('toJSON', async function () {
   const { _id, ...object } = this.toObject();
   // object.id = _id.toString();
   // Asynchronously populate the members (you may need to add your own logic to populate based on type)
   for (const member of object.members) {
-    member.refId = await mongoose.model(member.type).findById(member.refId);
+    if (member.type) {
+      const refId = await mongoose.model(member.type).findById(member.refId);
+      if (refId) {
+        member.refId = refId;
+      }
+    }
   }
   return object;
 });
